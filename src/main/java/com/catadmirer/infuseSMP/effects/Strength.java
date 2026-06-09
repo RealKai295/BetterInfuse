@@ -1,10 +1,11 @@
 package com.catadmirer.infuseSMP.effects;
 
+import com.catadmirer.infuseSMP.EffectConstants;
+import com.catadmirer.infuseSMP.EffectIds;
 import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.Message;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
 import com.catadmirer.infuseSMP.util.ItemUtil;
-import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -14,39 +15,79 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 
-public class Strength implements Listener {
-    private static Infuse plugin;
-    
-    public Strength(Infuse plugin) {
-        Strength.plugin = plugin;
+import java.util.UUID;
+
+public class Strength extends InfuseEffect {
+    private final Infuse plugin;
+
+    public Strength() {
+        this(false);
     }
 
-    public static void activateSpark(Boolean isAugmented, Player player) {
-        UUID playerUUID = player.getUniqueId();
+    public Strength(boolean augmented) {
+        super("strength", EffectIds.STRENGTH, augmented, EffectConstants.potionColor(EffectIds.STRENGTH), EffectConstants.ritualColor(EffectIds.STRENGTH));
+
+        this.plugin = Infuse.getInstance();
+    }
+
+    @Override
+    public void equip(Player owner) {}
+
+    @Override
+    public void unequip(Player owner) {}
+
+    @Override
+    public void applyPassives(Player owner) {}
+
+    @Override
+    public void activateSpark(Player owner) {
+        UUID uuid = owner.getUniqueId();
 
         // Skipping players on cooldown
-        if (CooldownManager.isOnCooldown(playerUUID, "strength")) return;
+        if (CooldownManager.isOnCooldown(uuid, "strength")) return;
 
         // Playing sounds
-        player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1, 1);
+        owner.getWorld().playSound(owner.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1, 1);
         
         // Applying cooldowns and durations for the effect
-        long cooldown = plugin.getMainConfig().cooldown(isAugmented ? EffectMapping.AUG_STRENGTH : EffectMapping.STRENGTH);
-        long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_STRENGTH : EffectMapping.STRENGTH);
+        long cooldown = plugin.getMainConfig().cooldown(this);
+        long duration = plugin.getMainConfig().duration(this);
 
-        CooldownManager.setTimes(playerUUID, "strength", duration, cooldown);
+        CooldownManager.setTimes(uuid, "strength", duration, cooldown);
     }
+
+    @Override
+    public InfuseEffect getRegularVersion() {
+        return new Strength();
+    }
+
+    @Override
+    public InfuseEffect getAugmentedVersion() {
+        return new Strength(true);
+    }
+
+    @Override
+    public Message getName() {
+        return new Message(augmented ? Message.MessageType.AUG_STRENGTH_NAME : Message.MessageType.STRENGTH_NAME);
+    }
+
+    @Override
+    public Message getLore() {
+        return new Message(augmented ? Message.MessageType.AUG_STRENGTH_LORE : Message.MessageType.STRENGTH_LORE);
+    }
+
+    //// Listeners ////
+    //// These are only registered once, so they need to be able to handle being used for every player, no matter what effects they actually have
 
     @EventHandler
     public void extraDamage(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player attacker)) return;
 
         // Skipping players without the strength effect
-        if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.STRENGTH)) return;
+        if (!plugin.getDataManager().hasEffect(attacker, this)) return;
 
         // Boosting damage based on the attacker's health.
         double damage = event.getDamage();
@@ -65,14 +106,14 @@ public class Strength implements Listener {
     public void strengthSparkAutoCrit(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player player)) return;
 
-        // Fabrictating crits if the spark is active and it wasn't already a critical hit.
+        // Fabricating crits if the spark is active, and if it wasn't already a critical hit.
         if (CooldownManager.isEffectActive(player.getUniqueId(), "strength") && !event.isCritical()) {
             // Changing the damage to that of a crit.
             double originalDamage = event.getDamage();
             double critDamage = originalDamage * 1.35;
             event.setDamage(critDamage);
             
-            // Playing the crit noise and spawing crit particles.
+            // Playing the crit noise and spawning crit particles.
             Entity hitEntity = event.getEntity();
             hitEntity.getWorld().playSound(hitEntity.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1, 1);
             hitEntity.getWorld().spawnParticle(Particle.CRIT, hitEntity.getLocation().add(0, hitEntity.getHeight() / 2, 0), 10);
@@ -85,7 +126,7 @@ public class Strength implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
 
         // Making sure the shooter has the strength effect
-        if (!plugin.getDataManager().hasEffect(player, EffectMapping.STRENGTH)) return;
+        if (!plugin.getDataManager().hasEffect(player, this)) return;
 
         // Increasing the piercing level of the shot arrow.
         if (event.getProjectile() instanceof Arrow arrow) {
@@ -103,7 +144,7 @@ public class Strength implements Listener {
         if (entity instanceof Player) return;
 
         // Making sure the attacker has the strength effect
-        if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.STRENGTH)) return;
+        if (!plugin.getDataManager().hasEffect(attacker, this)) return;
 
         // Doubling the damage of the attack
         event.setDamage(event.getDamage() * 2);
@@ -122,7 +163,7 @@ public class Strength implements Listener {
         if (!ItemUtil.isAxe(attacker.getInventory().getItemInMainHand())) return;
 
         // Making sure the attacker has the strength effect
-        if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.STRENGTH)) return;
+        if (!plugin.getDataManager().hasEffect(attacker, this)) return;
 
         // Playing noise and stunning the opponent
         player.getWorld().playSound(player.getLocation(), Sound.ITEM_SHIELD_BREAK, 1, 1);

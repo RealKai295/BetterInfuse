@@ -119,7 +119,7 @@ public class Message {
 
         EFFECT_EQUIPPED(List.of("effect_name"), "<green>You have equipped the %effect_name%"),
 
-        SWAP_NO_EFFECTS("<red>You do not have any effects equipped to swap."),
+        SWAP_NO_EFFECTS("<red>You do not have any effects equipped to swap."), // todo: deprecate
         SWAP_SUCCESS("<green>Your Effects have been swapped."),
 
         THIEF_STEAL(List.of("victim", "effect_name"), "<yellow>You stole %victim%'s %effect_name% Effect"),

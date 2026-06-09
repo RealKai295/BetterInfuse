@@ -1,9 +1,11 @@
 package com.catadmirer.infuseSMP;
 
 import com.catadmirer.infuseSMP.Message.MessageType;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
+
 import java.io.File;
 import java.io.IOException;
+
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -230,12 +232,11 @@ public class MessageConfig {
             config.set("errors.target_not_found", null);
         }
 
-        for (EffectMapping mapping : EffectMapping.values()) {
-            String effectKey = mapping.name();
-            MessageType effect_name = MessageType.valueOf(effectKey + "_NAME");
-            MessageType effect_lore = MessageType.valueOf(effectKey + "_LORE");
+        for (InfuseEffect effect : InfuseEffect.getRegisteredEffects().values()) {
+            String effectKey = effect.toString();
 
-            effectKey = effectKey.toLowerCase();
+            MessageType effect_name = MessageType.valueOf(effectKey.toUpperCase() + "_NAME");
+            MessageType effect_lore = MessageType.valueOf(effectKey.toUpperCase() + "_LORE");
 
             if (config.contains(effectKey + ".effect_name")) {
                 config.set(effectKey + "_name", config.get(effectKey + ".effect_name", effect_name.defaultValue));

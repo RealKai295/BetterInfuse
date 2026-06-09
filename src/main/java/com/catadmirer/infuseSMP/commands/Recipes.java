@@ -3,9 +3,10 @@ package com.catadmirer.infuseSMP.commands;
 import com.catadmirer.infuseSMP.Infuse;
 import com.catadmirer.infuseSMP.Message;
 import com.catadmirer.infuseSMP.Message.MessageType;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import com.catadmirer.infuseSMP.inventories.RecipeGUI;
 import com.catadmirer.infuseSMP.inventories.RecipeListGUI;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
+
 import java.util.ArrayList;
 import java.util.List;
 import net.kyori.adventure.text.Component;
@@ -39,20 +40,20 @@ public class Recipes implements CommandExecutor, Listener {
 
     /**
      * Create a potion effect with the effect limits for lore rather than the default lore.
-     * 
-     * @param potionName The name of the potion to create.
+     *
+     * @param effect The {@link InfuseEffect} to create.
      * 
      * @return The effect item with modified lore.
      */
-    public static ItemStack createPotionWithModifiedLore(EffectMapping effect) {
+    public static ItemStack createPotionWithModifiedLore(InfuseEffect effect) {
         // Only regular effects should be put here
         if (effect.isAugmented()) return null;
 
         // Creating the potion from the effect
         ItemStack potionItem = effect.createItem();
 
-        int augLeft = plugin.getMainConfig().getCraftLimit(effect.augmented()) - plugin.getDataManager().getExistingCount(effect.augmented());
-        int regLeft = plugin.getMainConfig().getCraftLimit(effect) - plugin.getDataManager().getExistingCount(effect);
+        int augLeft = plugin.getMainConfig().getCraftLimit(effect.getAugmentedVersion()) - plugin.getDataManager().getExistingCount(effect.getAugmentedVersion());
+        int regLeft = plugin.getMainConfig().getCraftLimit(effect.getRegularVersion()) - plugin.getDataManager().getExistingCount(effect.getRegularVersion());
 
         potionItem.editMeta(meta -> {
             List<Component> lore = new ArrayList<>();
@@ -92,7 +93,7 @@ public class Recipes implements CommandExecutor, Listener {
 
         // Getting the clicked item and opening the recipe menu for the item.
         ItemStack clickedItem = event.getCurrentItem();
-        EffectMapping effect = EffectMapping.fromItem(clickedItem);
+        InfuseEffect effect = InfuseEffect.fromItem(clickedItem);
         if (effect == null) return;
 
         HumanEntity player = event.getWhoClicked();

@@ -1,6 +1,6 @@
 package com.catadmirer.infuseSMP.inventories;
 
-import com.catadmirer.infuseSMP.managers.EffectMapping;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import com.catadmirer.infuseSMP.managers.RecipeManager;
 import com.catadmirer.infuseSMP.util.InventoryUtils;
 import net.kyori.adventure.text.Component;
@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 public class RecipeGUI implements InventoryHolder {
     private final Inventory inventory;
 
-    public RecipeGUI(RecipeManager manager, EffectMapping effect) {
+    public RecipeGUI(RecipeManager manager, InfuseEffect effect) {
         inventory = Bukkit.createInventory(this, 45, Component.text("Recipes"));
 
         ShapedRecipe recipe = manager.getRecipe(effect);

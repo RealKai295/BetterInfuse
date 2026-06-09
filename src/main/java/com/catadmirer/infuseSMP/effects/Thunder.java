@@ -1,17 +1,7 @@
 package com.catadmirer.infuseSMP.effects;
 
-import com.catadmirer.infuseSMP.HitTracker;
-import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.*;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
-import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Particle;
@@ -25,35 +15,60 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Trident;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
-public class Thunder implements Listener {
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+public class Thunder extends InfuseEffect {
     private static final Map<UUID,Integer> hitTracker = new HashMap<>();
     private static final Queue<Runnable> decayQueue = new ConcurrentLinkedQueue<>();
 
-    private static Infuse plugin;
+    private final Infuse plugin;
 
-    public Thunder(Infuse plugin) {
-        Thunder.plugin = plugin;
+    public Thunder() {
+        this(false);
     }
 
-    public static void activateSpark(Boolean isAugmented, Player caster) {
-        UUID playerUUID = caster.getUniqueId();
+    public Thunder(boolean augmented) {
+        super("thunder", EffectIds.THUNDER, augmented, EffectConstants.potionColor(EffectIds.THUNDER), EffectConstants.ritualColor(EffectIds.THUNDER));
 
-        if (CooldownManager.isOnCooldown(playerUUID, "thunder")) return;
-        caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1, 1);
+        this.plugin = Infuse.getInstance();
+    }
+
+    @Override
+    public void equip(Player owner) {}
+
+    @Override
+    public void unequip(Player owner) {
+        hitTracker.remove(owner.getUniqueId());
+    }
+
+    @Override
+    public void applyPassives(Player owner) {}
+
+    @Override
+    public void activateSpark(Player owner) {
+        UUID uuid = owner.getUniqueId();
+
+        if (CooldownManager.isOnCooldown(uuid, "thunder")) return;
+        owner.getWorld().playSound(owner.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1, 1);
         
         // Applying cooldowns and durations for the effect
-        long cooldown = plugin.getMainConfig().cooldown(isAugmented ? EffectMapping.AUG_THUNDER : EffectMapping.THUNDER);
-        long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_THUNDER : EffectMapping.THUNDER);
+        long cooldown = plugin.getMainConfig().cooldown(this);
+        long duration = plugin.getMainConfig().duration(this);
 
-        CooldownManager.setTimes(playerUUID, "thunder", duration, cooldown);
+        CooldownManager.setTimes(uuid, "thunder", duration, cooldown);
 
         long durationTicks = duration * 20;
-        World world = caster.getWorld();
+        World world = owner.getWorld();
 
         // TODO: make configs
         double baseRadius = 10;
@@ -72,7 +87,7 @@ public class Thunder implements Listener {
                 // Calculating the radius
                 double radius = baseRadius;
                 while (true) {
-                    long nearbyPlayers = world.getNearbyEntities(caster.getLocation(), radius, radius, radius).stream().filter(p -> p instanceof Player).count();
+                    long nearbyPlayers = world.getNearbyEntities(owner.getLocation(), radius, radius, radius).stream().filter(p -> p instanceof Player).count();
                     double tmp = baseRadius + radiusBoostPerPlayer * nearbyPlayers;
                     if (tmp == radius) {
                         break;
@@ -82,16 +97,36 @@ public class Thunder implements Listener {
                 }
 
                 // Striking all players within the radius
-                for (Entity entity : world.getNearbyEntities(caster.getLocation(), radius, radius, radius)) {
+                for (Entity entity : world.getNearbyEntities(owner.getLocation(), radius, radius, radius)) {
                     if (!(entity instanceof Player target)) continue;
-                    if (plugin.getDataManager().isTrusted(target, caster)) continue;
+                    if (plugin.getDataManager().isTrusted(target, owner)) continue;
 
-                    strikeLighting(target, caster);
+                    strikeLighting(target, owner);
                 }
 
                 this.ticksElapsed += 20;
             }
         }.runTaskTimer(plugin, 0L, 20L);
+    }
+
+    @Override
+    public InfuseEffect getRegularVersion() {
+        return new Thunder();
+    }
+
+    @Override
+    public InfuseEffect getAugmentedVersion() {
+        return new Thunder(true);
+    }
+
+    @Override
+    public Message getName() {
+        return new Message(augmented ? Message.MessageType.AUG_THUNDER_NAME : Message.MessageType.THUNDER_NAME);
+    }
+
+    @Override
+    public Message getLore() {
+        return new Message(augmented ? Message.MessageType.AUG_THUNDER_LORE : Message.MessageType.THUNDER_LORE);
     }
 
     /**
@@ -118,9 +153,9 @@ public class Thunder implements Listener {
     private void chainLightning(List<Player> targets) {
         if (targets == null) throw new InvalidParameterException("targets cannot be null");
         if (targets.size() == 11) return;
-        if (targets.size() < 1) throw new InvalidParameterException("targets list needs to have the attacker in the front");
+        if (targets.isEmpty()) throw new InvalidParameterException("targets list needs to have the attacker in the front");
 
-        Player attacker = targets.get(0);
+        Player attacker = targets.getFirst();
 
         // TODO: make config
         double radius = 3;
@@ -130,7 +165,7 @@ public class Thunder implements Listener {
             if (targets.contains(target)) continue;
 
             // Scheduling the lightning to strike the target 1 second after the next
-            Bukkit.getScheduler().runTaskLater(plugin, () -> strikeLighting(target, attacker), 20 * (targets.size() - 1));
+            Bukkit.getScheduler().runTaskLater(plugin, () -> strikeLighting(target, attacker), 20L * (targets.size() - 1));
 
             // Adding the target to the list
             targets.add(target);
@@ -140,6 +175,9 @@ public class Thunder implements Listener {
             return;
         }
     }
+
+    //// Listeners ////
+    //// These are only registered once, so they need to be able to handle being used for every player, no matter what effects they actually have
 
     /**
      * Tracking the number of hits a player has.
@@ -152,7 +190,7 @@ public class Thunder implements Listener {
         // Making sure both entities are players
         if (!(event.getDamager() instanceof Player attacker)) return;
         if (!(event.getEntity() instanceof Player target)) return;
-        if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.THUNDER)) return;
+        if (!plugin.getDataManager().hasEffect(attacker, this)) return;
 
         // Making sure it wasn't a lightning bolt
         if (event.getDamageSource().getDamageType().equals(DamageType.LIGHTNING_BOLT)) return;
@@ -218,15 +256,6 @@ public class Thunder implements Listener {
         }, hitCounterDecaySeconds * 20);
     }
 
-    /**
-     * Removes players from the hit tracker when they leave.
-     * 
-     * @param event A {@link PlayerQuitEvent}
-     */
-    public void onPlayerLeave(PlayerQuitEvent event) {
-        hitTracker.remove(event.getPlayer().getUniqueId());
-    }
-
     @EventHandler
     public void thunderAutoChanneling(EntityDamageByEntityEvent event) {
         // Ignoring non-trident damage
@@ -234,7 +263,7 @@ public class Thunder implements Listener {
 
         // Making sure the shooter has the thunder effect
         if (!(trident.getShooter() instanceof Player attacker)) return;
-        if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.THUNDER)) return;
+        if (!plugin.getDataManager().hasEffect(attacker, this)) return;
 
         // Only summoning lightning if the target is a living entity
         if (event.getEntity() instanceof LivingEntity target) {

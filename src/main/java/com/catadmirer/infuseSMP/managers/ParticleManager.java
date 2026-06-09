@@ -1,6 +1,8 @@
 package com.catadmirer.infuseSMP.managers;
 
+import com.catadmirer.infuseSMP.EffectIds;
 import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -15,17 +17,17 @@ public class ParticleManager {
     }
 
     public void spawnEffectParticles(Player player, String slot) {
-        EffectMapping effect = plugin.getDataManager().getEffect(player.getUniqueId(), slot);
+        InfuseEffect effect = plugin.getDataManager().getEffect(player.getUniqueId(), slot);
         if (effect == null) return;
 
         // Handling special particles for ender effect
         // TODO: Decide whether or not to keep this
-        if (effect == EffectMapping.ENDER || effect == EffectMapping.AUG_ENDER) {
+        if (effect.getId() == EffectIds.ENDER) {
             player.getWorld().spawnParticle(Particle.REVERSE_PORTAL, player.getLocation().add(0, 1, 0), 32, 0.3, 0.5, 0.3, 0);
             return;
         }
 
-        player.getWorld().spawnParticle(Particle.ENTITY_EFFECT, player.getLocation().add(0, 1, 0), 2, 0.3, 0.5, 0.3, 0.1, Color.fromARGB(effect.getColor().getRGB()));
+        player.getWorld().spawnParticle(Particle.ENTITY_EFFECT, player.getLocation().add(0, 1, 0), 2, 0.3, 0.5, 0.3, 0.1, Color.fromARGB(effect.getPotionColor().getRGB()));
     }
 
     /**

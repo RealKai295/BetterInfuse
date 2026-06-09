@@ -1,3 +1,5 @@
+Remove ApophisManager and put its functions into the Apophis effect class
+
 Use persistent data containers for effect IDS.  Setting custom model data makes it harder on the resource pack devs.
 
 Player Schedulers!  They cancel automatically if the player goes offline.

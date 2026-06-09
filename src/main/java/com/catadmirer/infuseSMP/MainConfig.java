@@ -1,21 +1,22 @@
 package com.catadmirer.infuseSMP;
 
-import com.catadmirer.infuseSMP.managers.EffectMapping;
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+
 public class MainConfig {
     public final File file;
     public final FileConfiguration config;
-    public final Plugin plugin;
+    public final Infuse plugin;
 
-    public MainConfig(Plugin plugin) {
+    public MainConfig(Infuse plugin) {
         this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "config.yml");
         this.config = YamlConfiguration.loadConfiguration(file);
@@ -33,15 +34,17 @@ public class MainConfig {
             return false;
         }
 
-        // load config
+        // Creating the file if it doesn't exist.
+        if (!file.exists()) {
+            file.getParentFile().mkdirs();
+            plugin.saveResource(file.getName(), true);
+        }
 
+        // Loading the config
         try {
-            if (!plugin.getDataFolder().exists()) plugin.getDataFolder().mkdirs();
-            if (!file.exists()) plugin.saveResource("config.yml", false);
             config.load(file);
             Infuse.LOGGER.info("Successfully loaded config.yml");
             return true;
-
         } catch (InvalidConfigurationException e) {
             Infuse.LOGGER.warn("{} contains an invalid YAML configuration.  Verify the contents of the file.", file.getName());
         } catch (IOException e) {
@@ -129,8 +132,8 @@ public class MainConfig {
         return config.getBoolean("join_effects_enabled");
     }
 
-    public List<EffectMapping> joinEffects() {
-        return config.getStringList("join_effects").stream().map(EffectMapping::fromEffectKey).filter(Objects::nonNull).toList();
+    public List<InfuseEffect> joinEffects() {
+        return config.getStringList("join_effects").stream().map(InfuseEffect::fromString).filter(Objects::nonNull).toList();
     }
 
     public boolean enableApophis() {
@@ -150,10 +153,10 @@ public class MainConfig {
      * 
      * @param effect The effect to check
      * 
-     * @return The number of effects that can be crafted of the specified {@link EffectMapping}.
+     * @return The number of effects that can be crafted of the specified {@link InfuseEffect}.
      */
-    public int getCraftLimit(EffectMapping effect) {
-        List<Integer> craftLimits = config.getIntegerList("craft_limits." + effect.regular().getKey());
+    public int getCraftLimit(InfuseEffect effect) {
+        List<Integer> craftLimits = config.getIntegerList("craft_limits." + effect.getKey());
 
         if (craftLimits.size() != 2) {
             Infuse.LOGGER.error("Craft limits are required to be a list of 2 integers.  Found {} entries for effect {}", craftLimits.size(), effect.getKey());
@@ -177,12 +180,12 @@ public class MainConfig {
         return config.getBoolean("invis.hide_deaths");
     }
 
-    public long cooldown(EffectMapping effect) {
-        return config.getLong(effect.regular().getKey() + ".cooldown." + (effect.isAugmented() ? "augmented" : "default"));
+    public long cooldown(InfuseEffect effect) {
+        return config.getLong(effect.getKey() + ".cooldown." + (effect.isAugmented() ? "augmented" : "default"));
     }
 
-    public long duration(EffectMapping effect) {
-        return config.getLong(effect.regular().getKey() + ".duration." + (effect.isAugmented() ? "augmented" : "default"));
+    public long duration(InfuseEffect effect) {
+        return config.getLong(effect.getKey() + ".duration." + (effect.isAugmented() ? "augmented" : "default"));
     }
 
     public int speedDashMultiplier() {

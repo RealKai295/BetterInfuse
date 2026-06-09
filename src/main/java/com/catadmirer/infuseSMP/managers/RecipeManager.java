@@ -1,6 +1,9 @@
 package com.catadmirer.infuseSMP.managers;
 
 import java.io.File;
+
+import com.catadmirer.infuseSMP.effects.Ender;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -35,8 +38,7 @@ public class RecipeManager {
      */
     public void reload() {
         // Removing all the infuse recipes
-        for (EffectMapping effect : EffectMapping.values()) {
-            if (effect.isAugmented()) continue;
+        for (InfuseEffect effect : InfuseEffect.getRegisteredEffects().values()) {
             Bukkit.removeRecipe(getRecipeKey(effect), true);
         }
 
@@ -46,23 +48,22 @@ public class RecipeManager {
 
     /** Registers the recipe for each effect. */
     public void registerRecipes() {
-        for (EffectMapping effect : EffectMapping.values()) {
-            if (effect.isAugmented()) continue;
+        for (InfuseEffect effect : InfuseEffect.getRegisteredEffects().values()) {
             if (!isRecipeEnabled(effect)) continue;
-            ShapedRecipe recipe = getRecipe(effect);
+            ShapedRecipe recipe = getRecipe(effect.getRegularVersion());
             
             Bukkit.addRecipe(recipe);
         }
     }
 
-    public boolean isRecipeEnabled(EffectMapping mapping) {
-        return recipesConfig.getBoolean(mapping.regular().getKey() + ".enabled", false);
+    public boolean isRecipeEnabled(InfuseEffect mapping) {
+        return recipesConfig.getBoolean(mapping.getKey() + ".enabled", false);
     }
 
-    public ShapedRecipe getRecipe(EffectMapping mapping) {
-        String baseKey = mapping.regular().getKey();
+    public ShapedRecipe getRecipe(InfuseEffect mapping) {
+        String baseKey = mapping.getKey();
         NamespacedKey recipeKey = new NamespacedKey(plugin, baseKey);
-        ShapedRecipe effectRecipe = new ShapedRecipe(recipeKey, mapping.regular().createItem());
+        ShapedRecipe effectRecipe = new ShapedRecipe(recipeKey, mapping.getRegularVersion().createItem());
 
         effectRecipe.shape(recipesConfig.getStringList(baseKey + ".shape").toArray(String[]::new));
         ConfigurationSection ingredientsConfig = recipesConfig.getConfigurationSection(baseKey + ".ingredients");
@@ -77,8 +78,8 @@ public class RecipeManager {
     }
 
     public void updateEnderRecipe() {
-        if (plugin.getDataManager().getExistingCount(EffectMapping.AUG_ENDER) > 0) {
-            ShapedRecipe enderRecipe = getRecipe(EffectMapping.ENDER);
+        if (plugin.getDataManager().getExistingCount(new Ender(true)) > 0) {
+            ShapedRecipe enderRecipe = getRecipe(new Ender(false));
             Bukkit.removeRecipe(enderRecipe.getKey(), true);
 
             String matName = recipesConfig.getString("ender.egg_replacement");
@@ -96,8 +97,8 @@ public class RecipeManager {
         }
     }
 
-    public NamespacedKey getRecipeKey(EffectMapping effect) {
-        return new NamespacedKey(plugin, effect.regular().getKey());
+    public NamespacedKey getRecipeKey(InfuseEffect effect) {
+        return new NamespacedKey(plugin, effect.getKey());
     }
 
     /**
@@ -112,12 +113,12 @@ public class RecipeManager {
         ItemStack item = recipe.getResult();
         
         // The returned EffectMapping should always be the regular form
-        EffectMapping effect = EffectMapping.fromItem(item);
+        InfuseEffect effect = InfuseEffect.fromItem(item);
         if (effect == null) return null;
         if (effect.isAugmented()) return null;
 
         // Checking if the augmented limit has been reached
-        EffectMapping augEffect = effect.augmented();
+        InfuseEffect augEffect = effect.getAugmentedVersion();
         if (plugin.getMainConfig().getCraftLimit(augEffect) > plugin.getDataManager().getExistingCount(augEffect)) {
             return augEffect.createItem();
         }

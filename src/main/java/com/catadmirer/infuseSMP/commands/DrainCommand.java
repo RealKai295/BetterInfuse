@@ -3,13 +3,14 @@ package com.catadmirer.infuseSMP.commands;
 import com.catadmirer.infuseSMP.Infuse;
 import com.catadmirer.infuseSMP.Message;
 import com.catadmirer.infuseSMP.Message.MessageType;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import com.catadmirer.infuseSMP.events.EffectUnequipEvent;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
+import org.jspecify.annotations.NonNull;
 
 public class DrainCommand implements CommandExecutor, Listener {
     private final Infuse plugin;
@@ -19,7 +20,7 @@ public class DrainCommand implements CommandExecutor, Listener {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String @NonNull [] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage(new Message(MessageType.ERROR_NOT_PLAYER).toComponent());
             return true;
@@ -35,7 +36,7 @@ public class DrainCommand implements CommandExecutor, Listener {
         }
 
         // Getting the mapping from the slot
-        EffectMapping effect = plugin.getDataManager().getEffect(player.getUniqueId(), slot);
+        InfuseEffect effect = plugin.getDataManager().getEffect(player.getUniqueId(), slot);
 
         // Handling an invalid or empty mapping
         if (effect == null) {

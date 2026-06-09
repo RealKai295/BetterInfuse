@@ -1,8 +1,9 @@
 package com.catadmirer.infuseSMP;
 
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
 import com.catadmirer.infuseSMP.managers.DataManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
+
 import java.util.UUID;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -29,17 +30,17 @@ public class PlayerSwapHandItemsListener implements Listener {
         String data = dataManager.getControlMode(playerUUID);
         if (data.equals("offhand")) {
             // Getting the effect equipped in each slot
-            EffectMapping lEffect = dataManager.getEffect(player.getUniqueId(), "1");
-            EffectMapping rEffect = dataManager.getEffect(player.getUniqueId(), "2");
+            InfuseEffect lEffect = dataManager.getEffect(player.getUniqueId(), "1");
+            InfuseEffect rEffect = dataManager.getEffect(player.getUniqueId(), "2");
 
             // Activating the left effect's spark if the player was sneaking and the effect wasn't on cooldown.
-            if (lEffect != null && !player.isSneaking() && !CooldownManager.isOnCooldown(playerUUID, lEffect.regular().getKey())) {
+            if (lEffect != null && !player.isSneaking() && !CooldownManager.isOnCooldown(playerUUID, lEffect.getKey())) {
                 event.setCancelled(true);
                 lEffect.activateSpark(player);
             }
 
             // Activating the right effect's spark if the player was not sneaking and the effect wasn't on cooldown.
-            if (rEffect != null && player.isSneaking() && !CooldownManager.isOnCooldown(playerUUID, rEffect.regular().getKey())) {
+            if (rEffect != null && player.isSneaking() && !CooldownManager.isOnCooldown(playerUUID, rEffect.getKey())) {
                 event.setCancelled(true);
                 rEffect.activateSpark(player);
             }

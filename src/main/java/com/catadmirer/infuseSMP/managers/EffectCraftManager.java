@@ -3,6 +3,7 @@ package com.catadmirer.infuseSMP.managers;
 import com.catadmirer.infuseSMP.Infuse;
 import com.catadmirer.infuseSMP.Message;
 import com.catadmirer.infuseSMP.Message.MessageType;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import com.catadmirer.infuseSMP.inventories.StationSelectionMenu;
 import java.io.IOException;
 import java.net.URI;
@@ -92,7 +93,7 @@ public class EffectCraftManager implements Listener {
     public void onCraft(CraftItemEvent event) {
         // Safe to assume the crafted item is the correct augmented/regular form due to the PrepareItemCraftEvent Listener
         ItemStack craftedItem = event.getInventory().getResult();
-        EffectMapping effect = EffectMapping.fromItem(craftedItem);
+        InfuseEffect effect = InfuseEffect.fromItem(craftedItem);
         HumanEntity player = event.getWhoClicked();
 
         // Making sure the item being crafted is an Infuse effect
@@ -181,7 +182,7 @@ public class EffectCraftManager implements Listener {
 
         // Getting the duration of the ritual
         int ritualDuration;
-        if (effect == EffectMapping.AUG_ENDER) {
+        if (effect.toString().equals("aug_ender")) {
             ritualDuration = plugin.getMainConfig().ritualDurationEnder();
         } else {
             ritualDuration = plugin.getMainConfig().ritualDuration();
@@ -255,7 +256,7 @@ public class EffectCraftManager implements Listener {
 
             @Override
             public void run() {
-                progress -= progressDecrement;
+                progress -= (float) progressDecrement;
                 if (progress <= 0) {
                     ritualBossBar.progress(0);
                     cancel();
@@ -303,7 +304,7 @@ public class EffectCraftManager implements Listener {
     public void onPrepareCraft(PrepareItemCraftEvent event) {
         // Ignoring non-infuse items
         if (event.getRecipe() == null) return;
-        if (EffectMapping.fromItem(event.getRecipe().getResult()) == null) return;
+        if (InfuseEffect.fromItem(event.getRecipe().getResult()) == null) return;
 
         ItemStack toCraft = plugin.getRecipeManager().getItemToCraft(event.getRecipe());
         event.getInventory().setResult(toCraft);
