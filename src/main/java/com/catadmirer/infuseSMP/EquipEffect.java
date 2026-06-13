@@ -154,10 +154,16 @@ public class EquipEffect implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         InfuseEffect effect = plugin.getDataManager().getEffect(player.getUniqueId(), "1");
-        if (effect != null) new EffectEquipEvent(player, effect, "1").callEvent();
+        if (effect != null) {
+            EffectEquipEvent e = new EffectEquipEvent(player, effect, "1");
+            if (e.callEvent()) effect.equip(player);
+        }
         
         effect = plugin.getDataManager().getEffect(player.getUniqueId(), "2");
-        if (effect != null) new EffectEquipEvent(player, effect, "2").callEvent();
+        if (effect != null) {
+            EffectEquipEvent e = new EffectEquipEvent(player, effect, "2");
+            if (e.callEvent()) effect.equip(player);
+        }
     }
 
     /**
