@@ -116,6 +116,7 @@ public class Message {
         JOIN_ABILITY_NOTIFY(List.of("control_mode"), "<gray>Your ability mode is set to: %control_mode%"),
         
         DRAIN_SUCCESS(List.of("effect_name"), "<green>You have drained your: %effect_name%"),
+        DRAIN_CANCELLED("<red>Something stopped you from draining your effect!"),
 
         EFFECT_EQUIPPED(List.of("effect_name"), "<green>You have equipped the %effect_name%"),
 

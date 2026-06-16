@@ -26,41 +26,13 @@ public class DrainCommand implements CommandExecutor {
         }
 
         // Getting the slot to drain based on the command used.  Accepts /ldrain or /rdrain
-        String slot;
-        if (label.contains("ldrain")) slot = "1";
-        else if (label.contains("rdrain")) slot = "2";
-        else {
+        if (label.equals("ldrain")){
+            plugin.getEffectManager().drainEffect(player, "1");
+        } else if (label.equals("rdrain")) {
+            plugin.getEffectManager().drainEffect(player, "2");
+        } else {
             player.sendMessage(new Message(MessageType.WITHDRAW_INVALID).toComponent());
-            return true;
         }
-
-        // Getting the mapping from the slot
-        InfuseEffect effect = plugin.getDataManager().getEffect(player.getUniqueId(), slot);
-
-        // Handling an invalid or empty mapping
-        if (effect == null) {
-            Message msg = new Message(MessageType.EFFECT_NONE_EQUIPPED);
-            msg.applyPlaceholder("slot", slot);
-            player.sendMessage(msg.toComponent());
-            return true;
-        }
-
-        new EffectUnequipEvent(player, effect, slot).callEvent();
-
-        // Making sure the player has inventory space for the drained item.
-        if (player.getInventory().firstEmpty() == -1) {
-            player.sendMessage(new Message(MessageType.ERROR_INV_FULL).toComponent());
-            return true;
-        }
-
-        // Removing the effect from the player
-        plugin.getDataManager().removeEffect(player.getUniqueId(), slot);
-        Message msg = new Message(MessageType.DRAIN_SUCCESS);
-        msg.applyPlaceholder("effect_name", effect.getName());
-        player.sendMessage(msg.toComponent());
-
-        // Giving the player the effect item.
-        player.getInventory().addItem(effect.createItem());
 
         return true;
     }
