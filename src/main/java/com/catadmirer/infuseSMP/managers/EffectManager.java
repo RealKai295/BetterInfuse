@@ -105,27 +105,91 @@ public class EffectManager implements Listener {
     }
 
     /**
-     * Unequips an effect from a player.
-     * Fails if the {@link EffectUnequipEvent} was canceled.
+     * Removes an effect from a player.
+     * The effect item is not given to them, and the number of that effect that exists is lowered.
+     * Fails if they don't have an effect equipped.
      *
+     * @param player The player to remove an effect from.
+     * @param slot The slot to remove an effect from.
+     */
+    public void unequipEffect(Player player, String slot) {
+        unequipEffect(Audience.empty(), player, slot, UnequipItemHandler.DESTROY);
+    }
+
+    /**
+     * Drains an effect from a player.
+     * Sends feedback messages to the player and gives them the effect item.
+     * Fails if the player's inventory is full or if they don't have an effect equipped.
+     *
+     * @param player The player who is draining an effect.
+     * @param slot The slot to drain an effect from.
+     */
+    public void drainEffect(Player player, String slot) {
+        unequipEffect(player, player, slot, UnequipItemHandler.GIVE);
+    }
+
+    /**
+     * Removes a player's effect from the specified slot and drops it on the ground.
+     * Fails if the player doesn't have an effect equipped.
+     *
+     * @param player The player to remove an effect from.
+     * @param slot The slot to remove the effect from.
+     */
+    public void dropEffect(Player player, String slot) {
+        unequipEffect(Audience.empty(), player, slot, UnequipItemHandler.DROP);
+    }
+
+    /**
+     * Unequips an effect from a player.
+     * Fails if the {@link EffectUnequipEvent} was canceled or if the player's inventory was full.
+     *
+     * @param audience The {@link Audience} to send messages to.
      * @param player The {@link Player} to remove an effect from.
      * @param slot The slot to remove the effect from.
-     * @return True if the effect was removed successfully, false otherwise.
+     * @param itemHandler Whether to drop the item, give it to the player, or destroy it.
      */
-    public boolean unequipEffect(Player player, String slot) {
-        // Getting the equipped effect
-        InfuseEffect currentEffect = plugin.getDataManager().getEffect(player.getUniqueId(), slot);
-        if (currentEffect == null) return true;
+    public void unequipEffect(Audience audience, Player player, String slot, UnequipItemHandler itemHandler) {
+        InfuseEffect effect = plugin.getDataManager().getEffect(player.getUniqueId(), slot);
 
-        // Calling an EffectUnequipEvent and stopping if it is canceled.
-        EffectUnequipEvent event = new EffectUnequipEvent(player, currentEffect, slot);
-        if (!event.callEvent()) return false;
+        // Checking if the effect is null
+        if (effect == null) {
+            Message msg = new Message(MessageType.EFFECT_NONE_EQUIPPED);
+            msg.applyPlaceholder("slot", slot);
+            audience.sendMessage(msg.toComponent());
+            return;
+        }
+
+        // Calling an EffectUnequipEvent
+        EffectUnequipEvent event = new EffectUnequipEvent(player, effect, slot);
+        if (!event.callEvent()) {
+            audience.sendMessage(new Message(MessageType.DRAIN_CANCELLED).toComponent());
+            return;
+        }
+
+        // Making sure the player has inventory space for the drained item if it meant to be given to them.
+        if (itemHandler == UnequipItemHandler.GIVE && player.getInventory().firstEmpty() == -1) {
+            audience.sendMessage(new Message(MessageType.ERROR_INV_FULL).toComponent());
+            return;
+        }
 
         // Unequipping the effect and updating the player data
-        currentEffect.unequip(player);
+        effect.unequip(player);
         plugin.getDataManager().removeEffect(player.getUniqueId(), slot);
 
-        return true;
+        // Checking the UnequipItemHandler
+        switch (itemHandler) {
+            case DROP -> player.getWorld().dropItem(player.getLocation(), effect.createItem());
+            case GIVE -> player.getInventory().addItem(effect.createItem());
+            case DESTROY -> {
+                int count = plugin.getDataManager().getExistingCount(effect);
+                plugin.getDataManager().setExistingCount(effect, count - 1);
+            }
+        }
+
+        // Sending the success message
+        Message msg = new Message(MessageType.DRAIN_SUCCESS);
+        msg.applyPlaceholder("effect_name", effect.getName());
+        audience.sendMessage(msg.toComponent());
     }
 
     /**
@@ -217,5 +281,15 @@ public class EffectManager implements Listener {
 
         // Dropping the effect item at the player's location
         player.getWorld().dropItemNaturally(player.getLocation(), effect.createItem());
+    }
+
+    /** Used to tell the unequip function what to do with the effect item when a player removes their effect. */
+    public enum UnequipItemHandler {
+        /// Drops the item on the ground.
+        DROP,
+        /// Gives the item to the player (unequip fails if the player's inventory is full).
+        GIVE,
+        /// Destroys/doesn't do anything with the item.
+        DESTROY
     }
 }
