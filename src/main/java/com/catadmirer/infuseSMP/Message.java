@@ -48,9 +48,9 @@ public class Message {
 
     /**
      * Helper function that allows minimessage translation for an arbitrary string.
-     * 
+     *
      * @param message The minimessage string to translate
-     * 
+     *
      * @return The {@link Component} that can be sent to players.
      */
     public static Component toComponent(String message) {
@@ -65,15 +65,15 @@ public class Message {
         SLOT_EMPTY,
         EFFECT_NONE_EQUIPPED,
         WITHDRAW_INVALID,
-        TRUST_CONSOLEUSAGE,
-        TRUST_INCORRECTUSAGE,
-        TRUST_NOPLAYER,
+        TRUST_CONSOLE_USAGE,
+        TRUST_INCORRECT_USAGE,
+        TRUST_NO_PLAYER,
         TRUST_SELF,
         TRUST_ADDED,
-        TRUST_ALREADYTRUSTED,
+        TRUST_ALREADY_TRUSTED,
         TRUST_REMOVED,
-        TRUST_NOTTRUSTED,
-        EFFECT_NOBREWING,
+        TRUST_NOT_TRUSTED,
+        EFFECT_NO_BREWING,
         DEATH_MESSAGE,
         CONTROLS_USAGE,
         CONTROLS_INVALID_PARAM,
@@ -158,7 +158,7 @@ public class Message {
         THUNDER_LORE,
         AUG_THUNDER_NAME,
         AUG_THUNDER_LORE,
-        
+
         // Extra effect messages
         APOPHIS_NAME,
         APOPHIS_LORE,
