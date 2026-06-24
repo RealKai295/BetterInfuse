@@ -6,7 +6,6 @@ import com.catadmirer.infuseSMP.Message.MessageType;
 import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import com.catadmirer.infuseSMP.events.EffectEquipEvent;
 import com.catadmirer.infuseSMP.events.EffectUnequipEvent;
-import net.kyori.adventure.audience.Audience;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -15,10 +14,12 @@ import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.Random;
 
+@NullMarked
 public class EffectManager implements Listener {
     private final Infuse plugin;
 
@@ -27,57 +28,44 @@ public class EffectManager implements Listener {
     }
 
     /**
-     * Equips an effect in the primary or secondary slot.
-     * If both slots are full, it drains the secondary slot and equips the new effect there.
-     * 
-     * @param player The player who will get the effect
-     * @param effect The effect to give the player
+     * Sets the effect a player has in a slot.
+     * Overrides any effect already in that slot.
+     *
+     * @param player The {@link Player} to give an effect to.
+     * @param effect The {@link InfuseEffect} to equip.
+     * @param slot The slot to put the effect in.
      */
-    public void safeEquip(Player player, InfuseEffect effect) {
-        if (equipEffect(player, effect, "1")) return;
-        if (equipEffect(player, effect, "2")) return;
-
-        drainEffect(player, "2");
-        equipEffect(player, effect, "2");
+    public EquipResult setEffect(Player player, InfuseEffect effect, String slot) {
+        return equipEffect(player, effect, slot, true);
     }
 
     /**
-     * Equips an effect in the specified slot.
-     * Fails if the {@link EffectEquipEvent} is canceled.
+     * Equips an effect to a player.
+     * Fails if the {@link EffectEquipEvent} was canceled or there was an effect equipped and override was set to false.
      *
-     * @param player The player who will get the effect
-     * @param effect The effect to give the player.
-     * @param slot The slot to equip the effect into.
+     * @param player The {@link Player} to give an effect to.
+     * @param effect The {@link InfuseEffect} to equip.
+     * @param slot The slot to put the effect in.
+     * @param override Whether to replace an existing effect.
      *
-     * @return true if the effect was equipped successfully, false otherwise.
+     * @return A {@link EquipResult}
      */
-    public boolean equipEffect(Player player, InfuseEffect effect, String slot) {
+    public EquipResult equipEffect(Player player, InfuseEffect effect, String slot, boolean override) {
         // Calling an EffectEquipEvent and stopping if it is canceled.
         EffectEquipEvent event = new EffectEquipEvent(player, effect, slot);
-        if (!event.callEvent()) return false;
+        if (!event.callEvent()) return new EquipResult(EquipResultType.CANCELLED, effect);
+
+        InfuseEffect equipped = plugin.getDataManager().getEffect(player.getUniqueId(), slot);
+        if (equipped != null && !override) return new EquipResult(EquipResultType.FAIL);
+
+        // Unequipping the old effect
+        if (equipped != null) equipped.unequip(player);
 
         // Equipping the effect and updating the player data
         effect.equip(player);
         plugin.getDataManager().setEffect(player.getUniqueId(), slot, effect);
 
-        // Notifying the player
-        Message msg = new Message(MessageType.EFFECT_EQUIPPED);
-        msg.applyPlaceholder("effect_name", effect.getName());
-        player.sendMessage(msg.toComponent());
-
-        return true;
-    }
-
-    /**
-     * Removes an effect from a player.
-     * The effect item is not given to them, and the number of that effect that exists is lowered.
-     * Fails if they don't have an effect equipped.
-     *
-     * @param player The player to remove an effect from.
-     * @param slot The slot to remove an effect from.
-     */
-    public void unequipEffect(Player player, String slot) {
-        unequipEffect(Audience.empty(), player, slot, UnequipItemHandler.DESTROY);
+        return new EquipResult(EquipResultType.SUCCESS, effect);
     }
 
     /**
@@ -88,103 +76,110 @@ public class EffectManager implements Listener {
      * @param player The player who is draining an effect.
      * @param slot The slot to drain an effect from.
      */
-    public void drainEffect(Player player, String slot) {
-        unequipEffect(player, player, slot, UnequipItemHandler.GIVE);
+    public EquipResult drainEffect(Player player, String slot) {
+        // Unequipping the effect
+        EquipResult result = unequipEffect(player, slot);
+
+        // Checking if an effect was removed
+        if (result.type == EquipResultType.FAIL) {
+            Message msg = new Message(MessageType.EFFECT_NONE_EQUIPPED);
+            msg.applyPlaceholder("slot", slot);
+            player.sendMessage(msg.toComponent());
+            return result;
+        }
+
+        // Skipping if the unequip event was canceled
+        if (result.type == EquipResultType.CANCELLED) {
+            if (result.effect == null) {
+                throw new IllegalStateException("Cancelled unequip events should still return their related effect");
+            }
+
+            Message msg = new Message(MessageType.DRAIN_CANCELLED);
+            msg.applyPlaceholder("effect_name", result.effect.getName());
+            player.sendMessage(msg.toComponent());
+            return result;
+        }
+
+        // Making sure the effect is not null
+        if (result.effect == null) {
+            throw new IllegalStateException("Successful unequip events need to return their related effect.");
+        }
+
+        // Making sure the player has inventory space for the drained item if is meant to be given to them.
+        if (player.getInventory().firstEmpty() == -1) {
+            player.sendMessage(new Message(MessageType.ERROR_INV_FULL).toComponent());
+            return result;
+        }
+
+        // Giving the player the item
+        player.getInventory().addItem(result.effect.createItem());
+
+        // Sending the success message
+        Message msg = new Message(MessageType.DRAIN_SUCCESS);
+        msg.applyPlaceholder("effect_name", result.effect.getName());
+        player.sendMessage(msg.toComponent());
+
+        return result;
     }
 
     /**
      * Removes a player's effect from the specified slot and drops it on the ground.
-     * Fails if the player doesn't have an effect equipped.
+     * Fails if the player doesn't have an effect equipped or the event was canceled.
      *
      * @param player The player to remove an effect from.
      * @param slot The slot to remove the effect from.
      */
-    public void dropEffect(Player player, String slot) {
-        unequipEffect(Audience.empty(), player, slot, UnequipItemHandler.DROP);
+    public EquipResult dropEffect(Player player, String slot) {
+        EquipResult result = unequipEffect(player, slot);
+
+        // Checking if an effect was removed
+        if (result.type == EquipResultType.FAIL) {
+            Message msg = new Message(MessageType.EFFECT_NONE_EQUIPPED);
+            msg.applyPlaceholder("slot", slot);
+            player.sendMessage(msg.toComponent());
+            return result;
+        }
+
+        // Skipping if the unequip event was canceled
+        if (result.type == EquipResultType.CANCELLED) {
+            if (result.effect == null) {
+                throw new IllegalStateException("Cancelled unequip events should still return their related effect");
+            }
+
+            return result;
+        }
+
+        // Making sure the effect is not null
+        if (result.effect == null) {
+            throw new IllegalStateException("Successful unequip events need to return their related effect.");
+        }
+
+        // Dropping the item
+        player.getWorld().dropItem(player.getLocation(), result.effect.createItem());
+
+        return result;
     }
 
     /**
      * Unequips an effect from a player.
      * Fails if the {@link EffectUnequipEvent} was canceled or if the player's inventory was full.
      *
-     * @param audience The {@link Audience} to send messages to.
      * @param player The {@link Player} to remove an effect from.
      * @param slot The slot to remove the effect from.
-     * @param itemHandler Whether to drop the item, give it to the player, or destroy it.
      */
-    public void unequipEffect(Audience audience, Player player, String slot, UnequipItemHandler itemHandler) {
+    public EquipResult unequipEffect(Player player, String slot) {
         InfuseEffect effect = plugin.getDataManager().getEffect(player.getUniqueId(), slot);
-
-        // Checking if the effect is null
-        if (effect == null) {
-            Message msg = new Message(MessageType.EFFECT_NONE_EQUIPPED);
-            msg.applyPlaceholder("slot", slot);
-            audience.sendMessage(msg.toComponent());
-            return;
-        }
+        if (effect == null) return new EquipResult(EquipResultType.FAIL);
 
         // Calling an EffectUnequipEvent
         EffectUnequipEvent event = new EffectUnequipEvent(player, effect, slot);
-        if (!event.callEvent()) {
-            audience.sendMessage(new Message(MessageType.DRAIN_CANCELLED).toComponent());
-            return;
-        }
-
-        // Making sure the player has inventory space for the drained item if it meant to be given to them.
-        if (itemHandler == UnequipItemHandler.GIVE && player.getInventory().firstEmpty() == -1) {
-            audience.sendMessage(new Message(MessageType.ERROR_INV_FULL).toComponent());
-            return;
-        }
+        if (!event.callEvent()) return new EquipResult(EquipResultType.CANCELLED, effect);
 
         // Unequipping the effect and updating the player data
         effect.unequip(player);
         plugin.getDataManager().removeEffect(player.getUniqueId(), slot);
 
-        // Checking the UnequipItemHandler
-        switch (itemHandler) {
-            case DROP -> player.getWorld().dropItem(player.getLocation(), effect.createItem());
-            case GIVE -> player.getInventory().addItem(effect.createItem());
-            case DESTROY -> {
-                int count = plugin.getDataManager().getExistingCount(effect);
-                plugin.getDataManager().setExistingCount(effect, count - 1);
-            }
-        }
-
-        // Sending the success message
-        Message msg = new Message(MessageType.DRAIN_SUCCESS);
-        msg.applyPlaceholder("effect_name", effect.getName());
-        audience.sendMessage(msg.toComponent());
-    }
-
-    /**
-     * Handles logic for when a player joins the server.
-     * <p>
-     * It gives the player their starting effect if they haven't played before, and also enables the abilities for any effects the player has.
-     */
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-
-        // Giving the player their starting effects if they haven't joined before
-        if (!player.hasPlayedBefore() && plugin.getMainConfig().joinEffectsEnabled()) {
-            List<InfuseEffect> effects = plugin.getMainConfig().joinEffects();
-            if (effects.isEmpty()) return;
-            InfuseEffect effect = effects.get(new Random().nextInt(effects.size()));
-            equipEffect(player, effect, "1");
-        }
-
-        // Enabling each effect
-        InfuseEffect effect = plugin.getDataManager().getEffect(player.getUniqueId(), "1");
-        if (effect != null) {
-            EffectEquipEvent e = new EffectEquipEvent(player, effect, "1");
-            if (e.callEvent()) effect.equip(player);
-        }
-
-        effect = plugin.getDataManager().getEffect(player.getUniqueId(), "2");
-        if (effect != null) {
-            EffectEquipEvent e = new EffectEquipEvent(player, effect, "2");
-            if (e.callEvent()) effect.equip(player);
-        }
+        return new EquipResult(EquipResultType.SUCCESS, effect);
     }
 
     /**
@@ -195,10 +190,10 @@ public class EffectManager implements Listener {
     @EventHandler
     public void onPlayerConsume(PlayerItemConsumeEvent event) {
         Player player = event.getPlayer();
-        ItemStack mainHandItem = event.getItem();
+        ItemStack item = event.getItem();
 
         // Getting the effect from the item
-        InfuseEffect effect = InfuseEffect.fromItem(mainHandItem);
+        InfuseEffect effect = InfuseEffect.fromItem(item);
 
         // Skipping if the effect is not found.
         if (effect == null) return;
@@ -211,7 +206,21 @@ public class EffectManager implements Listener {
         }
          
         // Equipping the effect
-        this.safeEquip(player, effect);
+        EquipResult result = this.equipEffect(player, effect, "1", false);
+
+        // Equipping the slot in the players other slot
+        if (result.type == EquipResultType.FAIL) {
+            this.drainEffect(player, "2");
+            result = this.equipEffect(player, effect, "2", false);
+        }
+
+        // Skipping the rest of the logic if the equip event was cancelled
+        if (result.type == EquipResultType.CANCELLED) return;
+
+        // Notifying the player
+        Message msg = new Message(MessageType.EFFECT_EQUIPPED);
+        msg.applyPlaceholder("effect_name", effect.getName());
+        player.sendMessage(msg.toComponent());
 
         // Removing the effect from the player
         event.setItem(event.getItem().subtract(1));
@@ -224,47 +233,65 @@ public class EffectManager implements Listener {
      */
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
+        EquipResult result;
         Player player = event.getEntity();
-        InfuseEffect effect1 = plugin.getDataManager().getEffect(player.getUniqueId(), "1");
-        InfuseEffect effect2 = plugin.getDataManager().getEffect(player.getUniqueId(), "2");
         String dropMode = plugin.getMainConfig().effectDrops();
-        Random rand = new Random();
         switch (dropMode.toLowerCase()) {
-            case "1":
-                if (effect1 != null) {
-                    this.dropEffect(player, "1");
-                }
-                break;
+            case "random" -> {
+                String slot = (Math.random() > 0.5) ? "1" : "2";
 
-            case "2":
-                if (effect2 != null) {
-                    this.dropEffect(player, "2");
+                result = dropEffect(player, slot);
+                if (result.type == EquipResultType.FAIL) {
+                    dropEffect(player, slot.equals("1") ? "2" : "1");
                 }
-                break;
-
-            case "none":
-                break;
-
-            case "random":
-            default:
-                if (effect1 != null && effect2 != null) {
-                    String selectedEffect = rand.nextBoolean() ? "1" : "2";
-                    this.dropEffect(player, selectedEffect);
-                } else if (effect1 != null) {
-                    this.dropEffect(player, "1");
-                } else if (effect2 != null) {
-                    this.dropEffect(player, "2");
+            }
+            case "prefer_1" -> {
+                result = dropEffect(player, "1");
+                if (result.type == EquipResultType.FAIL) {
+                    dropEffect(player, "2");
                 }
-                break;
+            }
+            case "prefer_2" -> {
+                result = dropEffect(player, "2");
+                if (result.type == EquipResultType.FAIL) {
+                    dropEffect(player, "1");
+                }
+            }
+            case "only_1" -> dropEffect(player, "1");
+            case "only_2" -> dropEffect(player, "2");
+            case "none" -> {}
         }
     }
 
-    /** Unequips a players effects when they leave the game. */
+    /** Activates the player's effects and assigns them a starting effect if they haven't played before. */
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+
+        // Giving the player their starting effects if they haven't joined before
+        if (plugin.getMainConfig().joinEffectsEnabled() && !player.hasPlayedBefore()) {
+            List<InfuseEffect> effects = plugin.getMainConfig().joinEffects();
+            if (effects.isEmpty()) return;
+
+            InfuseEffect effect = effects.get((int) (Math.random() * effects.size()));
+            equipEffect(player, effect, "1", false);
+            return;
+        }
+
+        // Enabling each effect
+        InfuseEffect effect = plugin.getDataManager().getEffect(player.getUniqueId(), "1");
+        if (effect != null) effect.equip(player);
+
+        effect = plugin.getDataManager().getEffect(player.getUniqueId(), "2");
+        if (effect != null) effect.equip(player);
+    }
+
+    /** Unequips a player's effects when they leave the game. */
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
 
-        // Unequipping the player's effects
+        // Deactivating the player's effects
         InfuseEffect effect = plugin.getDataManager().getEffect(player.getUniqueId(), "1");
         if (effect != null) effect.unequip(player);
 
@@ -272,13 +299,21 @@ public class EffectManager implements Listener {
         if (effect != null) effect.unequip(player);
     }
 
-    /** Used to tell the unequip function what to do with the effect item when a player removes their effect. */
-    public enum UnequipItemHandler {
-        /// Drops the item on the ground.
-        DROP,
-        /// Gives the item to the player (unequip fails if the player's inventory is full).
-        GIVE,
-        /// Destroys/doesn't do anything with the item.
-        DESTROY
+    /**
+     * A record containing the result of an {@link EffectManager#equipEffect} or {@link EffectManager#unequipEffect} call.
+     *
+     * @param type The {@link EquipResultType} (Pass/Fail/Cancelled)
+     * @param effect
+     */
+    public record EquipResult(EquipResultType type, @Nullable InfuseEffect effect) {
+        public EquipResult(EquipResultType type) {
+            this(type, null);
+        }
+    }
+
+    public enum EquipResultType {
+        FAIL,
+        CANCELLED,
+        SUCCESS
     }
 }
