@@ -12,6 +12,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.Unmodifiable;
+import com.catadmirer.infuseSMP.extraeffects.Apophis;
+import com.catadmirer.infuseSMP.extraeffects.Thief;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -37,6 +39,24 @@ public abstract class InfuseEffect implements Listener {
         this.augmented = augmented;
         this.potionColor = potionColor;
         this.ritualColor = ritualColor;
+    }
+
+    public static void registerDefaults() {
+        register(new Emerald());
+        register(new Ender());
+        register(new Feather());
+        register(new Fire());
+        register(new Frost());
+        register(new Haste());
+        register(new Heart());
+        register(new Invis());
+        register(new Ocean());
+        register(new Regen());
+        register(new Speed());
+        register(new Strength());
+        register(new Thunder());
+        register(new Apophis());
+        register(new Thief());
     }
 
     public static boolean register(InfuseEffect effect) {
@@ -125,7 +145,7 @@ public abstract class InfuseEffect implements Listener {
 
         // Searching for a matching registered effect
         for (InfuseEffect effect : REGISTERED_EFFECTS.values()) {
-            if (!effect.getKey().equals(key)) continue;
+            if (!effect.getKey().equalsIgnoreCase(key)) continue;
 
             return augmented ? effect.getAugmentedVersion() : effect.getRegularVersion();
         }

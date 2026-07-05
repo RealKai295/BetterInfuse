@@ -45,14 +45,15 @@ public class Infuse extends JavaPlugin implements Listener {
     private final GlobalLoop loop;
     private final RecipeManager recipeManager;
     private final ParticleManager particleManager;
+    private final ApophisManager apophisManager;
 
     public static Infuse getInstance() {
         return instance;
     }
 
     public Infuse() {
-        new ApophisManager(this);
         this.mainConfig = new MainConfig(this);
+        this.apophisManager = new ApophisManager(this);
         this.dataManager = new DataManager(this);
         this.effectManager = new EffectManager(this);
         this.loop = new GlobalLoop(this);
@@ -68,6 +69,8 @@ public class Infuse extends JavaPlugin implements Listener {
 
         // Loading the Infuse plugin instance
         instance = this;
+
+        InfuseEffect.registerDefaults();
 
         // Loading the message translator
         new MessageTranslator().loadAll();
@@ -108,6 +111,9 @@ public class Infuse extends JavaPlugin implements Listener {
             LOGGER.warn("PlaceholderAPI is not installed, so custom placeholders won't work.");
         }
 
+        dataManager.getBetterTeamsTrust().initialize();
+        dataManager.getBetterTeamsTrust().logStatus();
+
         // Logging the success message
         LOGGER.info("Infuse Plugin has been enabled!");
     }
@@ -124,6 +130,7 @@ public class Infuse extends JavaPlugin implements Listener {
     private void registerCommands() {
         getCommand("trust").setExecutor(new TrustCommand(dataManager));
         getCommand("untrust").setExecutor(new TrustCommand(dataManager));
+        getCommand("trustlist").setExecutor(new TrustListCommand(dataManager));
         getCommand("recipes").setExecutor(new Recipes(this));
         getCommand("swap").setExecutor(new SwapEffects(this));
         
@@ -226,6 +233,10 @@ public class Infuse extends JavaPlugin implements Listener {
         // Enabling apophis listeners if the config allows
         if (mainConfig.enableApophis()) {
             getServer().getPluginManager().registerEvents(new Apophis(), this);
+            getServer().getPluginManager().registerEvents(apophisManager, this);
+            apophisManager.getTabIntegration().initialize();
+            apophisManager.getTabIntegration().registerHandlers();
+            apophisManager.getTabIntegration().logStatus();
         }
 
         // Enabling thief listeners if the config allows

@@ -140,7 +140,7 @@ public class EffectCraftManager implements Listener {
 
             Message formattedMessage = new Message(MessageType.REGULAR_BROADCAST);
             formattedMessage.applyPlaceholder("player", player.getName());
-            formattedMessage.applyPlaceholder("item", effect.getName().toString());
+            formattedMessage.applyPlaceholder("item", effect.getName().toComponent());
             formattedMessage.applyPlaceholder("x", brewerLocation.getBlockX());
             formattedMessage.applyPlaceholder("y", brewerLocation.getBlockY());
             formattedMessage.applyPlaceholder("z", brewerLocation.getBlockZ());

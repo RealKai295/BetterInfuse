@@ -48,7 +48,7 @@ public class TrustCommand implements CommandExecutor {
         // Making the caster trust the target.
         if (label.equalsIgnoreCase("trust")) {
             // Preventing duplicate trust entries
-            if (dataManager.getTrusted(caster).contains(target)) {
+            if (dataManager.isTrusted(caster, target)) {
                 Message msg = new Message(MessageType.TRUST_ALREADY_TRUSTED);
                 msg.applyPlaceholder("target", target.getName());
                 caster.sendMessage(msg.toComponent());
@@ -64,8 +64,15 @@ public class TrustCommand implements CommandExecutor {
 
         // Making the caster untrust the target.
         if (label.equalsIgnoreCase("untrust")) {
+            if (dataManager.areTeammates(caster, target)) {
+                Message msg = new Message(MessageType.TRUST_TEAMMATE);
+                msg.applyPlaceholder("target", target.getName());
+                caster.sendMessage(msg.toComponent());
+                return true;
+            }
+
             // Handling if the player already didnt trust the target
-            if (!dataManager.getTrusted(caster).contains(target)) {
+            if (!dataManager.isManuallyTrusted(caster, target)) {
                 Message msg = new Message(MessageType.TRUST_NOT_TRUSTED);
                 msg.applyPlaceholder("target", target.getName());
                 caster.sendMessage(msg.toComponent());

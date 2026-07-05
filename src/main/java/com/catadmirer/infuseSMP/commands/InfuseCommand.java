@@ -94,7 +94,7 @@ public class InfuseCommand implements CommandExecutor, TabCompleter {
 
                 msg = new Message(MessageType.INFUSE_GIVEEFFECT_SUCCESS);
                 msg.applyPlaceholder("effect_color", "<#" + Integer.toHexString(effect.getPotionColor().getRGB() & 0xffffff) + ">");
-                msg.applyPlaceholder("effect_name", effect.getName());
+                msg.applyPlaceholder("effect_name", effect.getName().toComponent());
                 target.sendMessage(msg.toComponent());
                 break;
             case "seteffect":
@@ -137,7 +137,7 @@ public class InfuseCommand implements CommandExecutor, TabCompleter {
                 msg = new Message(MessageType.INFUSE_SETEFFECT_SUCCESS);
                 msg.applyPlaceholder("slot", slot);
                 msg.applyPlaceholder("player_name", target.getName());
-                msg.applyPlaceholder("effect_name", effect.getName());
+                msg.applyPlaceholder("effect_name", effect.getName().toComponent());
                 player.sendMessage(msg.toComponent());
                 break;
             case "cleareffects":

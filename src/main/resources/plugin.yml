@@ -3,7 +3,7 @@ version: '$version'
 main: com.catadmirer.infuseSMP.Infuse
 api-version: '1.21.4'
 authors: [CatAdmirer, TurboJax]
-softdepend: [PlaceholderAPI]
+softdepend: [PlaceholderAPI, BetterTeams, TAB]
 commands:
   infuse:
     description: Base command for Infuse
@@ -36,6 +36,9 @@ commands:
   untrust:
     description: Untrust a player
     usage: /untrust <player>
+  trustlist:
+    description: View your trust list
+    usage: /trustlist
   recipes:
     description: Check the limits
     usage: /recipes

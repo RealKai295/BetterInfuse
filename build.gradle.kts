@@ -10,10 +10,13 @@ version = "2.4.4"
 repositories {
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
     maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://jitpack.io")
 }
 
 dependencies {
     compileOnly(libs.placeholderapi)
+    compileOnly(libs.betterteams)
+    compileOnly(libs.tab.api)
     paperweight.paperDevBundle("${libs.versions.minecraft.get()}+")
 }
 

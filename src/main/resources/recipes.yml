@@ -163,7 +163,7 @@ thunder:
     C: CREEPER_HEAD
 
 apophis:
-  enabled: false
+  enabled: true
   shape:
     - "BLB"
     - "LCL"
@@ -174,7 +174,7 @@ apophis:
     C: NETHER_STAR
 
 thief:
-  enabled: false
+  enabled: true
   shape:
     - "BLB"
     - "CDC"

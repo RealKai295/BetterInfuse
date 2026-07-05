@@ -99,7 +99,7 @@ public class EffectManager implements Listener {
             }
 
             Message msg = new Message(MessageType.DRAIN_CANCELLED);
-            msg.applyPlaceholder("effect_name", result.effect.getName());
+            msg.applyPlaceholder("effect_name", result.effect.getName().toComponent());
             player.sendMessage(msg.toComponent());
             return result;
         }
@@ -120,7 +120,7 @@ public class EffectManager implements Listener {
 
         // Sending the success message
         Message msg = new Message(MessageType.DRAIN_SUCCESS);
-        msg.applyPlaceholder("effect_name", result.effect.getName());
+        msg.applyPlaceholder("effect_name", result.effect.getName().toComponent());
         player.sendMessage(msg.toComponent());
 
         return result;
@@ -223,7 +223,7 @@ public class EffectManager implements Listener {
 
         // Notifying the player
         Message msg = new Message(MessageType.EFFECT_EQUIPPED);
-        msg.applyPlaceholder("effect_name", effect.getName());
+        msg.applyPlaceholder("effect_name", effect.getName().toComponent());
         player.sendMessage(msg.toComponent());
 
         // Removing the effect from the player

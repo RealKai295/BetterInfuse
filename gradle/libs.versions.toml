@@ -1,6 +1,8 @@
 [versions]
 minecraft = "26.1.2"
 placeholderapi = "2.11.6"
+betterteams = "5.1.1"
+tab-api = "6.0.0"
 run-paper = "3.0.2"
 paperweight = "2.0.0-beta.21"
 
@@ -10,3 +12,5 @@ run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }
 
 [libraries]
 placeholderapi = { module = "me.clip:placeholderapi", version.ref = "placeholderapi" }
+betterteams = { module = "com.github.booksaw:BetterTeams", version.ref = "betterteams" }
+tab-api = { module = "com.github.NEZNAMY:TAB-API", version.ref = "tab-api" }

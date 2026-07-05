@@ -11,6 +11,7 @@ build/
 .vscode/
 
 # Preserves eula and any dependencies
+*.txt
 !run/eula.txt
 !run/log4j2.xml
 !run/plugins/*.jar

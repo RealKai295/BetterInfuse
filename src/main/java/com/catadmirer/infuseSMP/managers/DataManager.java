@@ -2,6 +2,7 @@ package com.catadmirer.infuseSMP.managers;
 
 import com.catadmirer.infuseSMP.Infuse;
 import com.catadmirer.infuseSMP.effects.InfuseEffect;
+import com.catadmirer.infuseSMP.integrations.BetterTeamsTrustIntegration;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -20,11 +21,13 @@ public class DataManager {
     private final Infuse plugin;
     private final File dataFile;
     private final YamlConfiguration config;
+    private final BetterTeamsTrustIntegration betterTeamsTrust;
 
     public DataManager(Infuse plugin) {   
         this.plugin = plugin;     
         this.dataFile = new File(plugin.getDataFolder(), "data/playerdata.yml");
         this.config = YamlConfiguration.loadConfiguration(dataFile);
+        this.betterTeamsTrust = new BetterTeamsTrustIntegration();
     }
 
     /**
@@ -127,7 +130,8 @@ public class DataManager {
     }
 
     public List<OfflinePlayer> getTrusted(OfflinePlayer truster) {
-        return new ArrayList<>(config.getStringList(truster.getUniqueId() + ".trust").stream().map(UUID::fromString).map(Bukkit::getOfflinePlayer).toList());
+        List<OfflinePlayer> trusted = new ArrayList<>(config.getStringList(truster.getUniqueId() + ".trust").stream().map(UUID::fromString).map(Bukkit::getOfflinePlayer).toList());
+        return betterTeamsTrust.mergeTrustedWithTeammates(truster, trusted);
     }
 
     public void setTrusted(OfflinePlayer truster, List<OfflinePlayer> trusted) {
@@ -136,15 +140,15 @@ public class DataManager {
     }
 
     public void addTrust(OfflinePlayer caster, OfflinePlayer toTrust) {
-        List<OfflinePlayer> trustedPlayers = getTrusted(caster);
+        List<OfflinePlayer> trustedPlayers = new ArrayList<>(config.getStringList(caster.getUniqueId() + ".trust").stream().map(UUID::fromString).map(Bukkit::getOfflinePlayer).toList());
         trustedPlayers.add(toTrust);
 
         setTrusted(caster, trustedPlayers);
     }
 
     public void removeTrust(OfflinePlayer caster, OfflinePlayer trusted) {
-        List<OfflinePlayer> trustedSet = getTrusted(caster);
-        trustedSet.remove(trusted);
+        List<OfflinePlayer> trustedSet = new ArrayList<>(config.getStringList(caster.getUniqueId() + ".trust").stream().map(UUID::fromString).map(Bukkit::getOfflinePlayer).toList());
+        trustedSet.removeIf(player -> player.getUniqueId().equals(trusted.getUniqueId()));
 
         setTrusted(caster, trustedSet);
     }
@@ -152,8 +156,22 @@ public class DataManager {
     public boolean isTrusted(OfflinePlayer caster, OfflinePlayer trusted) {
         if (caster == null || trusted == null) return false;
         if (caster.getUniqueId().equals(trusted.getUniqueId())) return true;
+        if (betterTeamsTrust.areTeammates(caster, trusted)) return true;
 
-        return getTrusted(caster).contains(trusted);
+        return config.getStringList(caster.getUniqueId() + ".trust").contains(trusted.getUniqueId().toString());
+    }
+
+    public boolean isManuallyTrusted(OfflinePlayer caster, OfflinePlayer trusted) {
+        if (caster == null || trusted == null) return false;
+        return config.getStringList(caster.getUniqueId() + ".trust").contains(trusted.getUniqueId().toString());
+    }
+
+    public boolean areTeammates(OfflinePlayer first, OfflinePlayer second) {
+        return betterTeamsTrust.areTeammates(first, second);
+    }
+
+    public BetterTeamsTrustIntegration getBetterTeamsTrust() {
+        return betterTeamsTrust;
     }
 
     public void setEffect(UUID owner, String slot, InfuseEffect effect) {

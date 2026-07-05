@@ -89,7 +89,7 @@ public class MainConfig {
     }
 
     public Locale lang() {
-        return Locale.of(config.getString("lang", "en_us"));
+        return MessageTranslator.resolveLocale(config.getString("lang", "en_US"));
     }
 
     public boolean allowInfiniteEffects() {
@@ -240,6 +240,8 @@ public class MainConfig {
         if (!config.contains("emerald.xp_stolen_per_hit")) config.set("emerald.xp_stolen_per_hit", 15);
         if (!config.contains("emerald.xp_stolen_percent")) config.set("emerald.xp_stolen_percent", 1);
         if (!config.contains("emerald.percent_xp_to_share")) config.set("emerald.percent_xp_to_share", 0.5);
+        if (!config.contains("thief.duration.default")) config.set("thief.duration.default", 15);
+        if (!config.contains("thief.duration.augmented")) config.set("thief.duration.augmented", 20);
 
         save();
     }

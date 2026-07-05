@@ -181,17 +181,40 @@ public class Fire extends InfuseEffect {
     //// Listeners ////
     //// These are only registered once, so they need to be able to handle being used for every player, no matter what effects they actually have
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        boolean inLava = player.isInLava();
-        Vector direction = player.getLocation().getDirection().normalize();
-        if (inLava && plugin.getDataManager().hasEffect(player, this)) {
-            if (event.getFrom().distanceSquared(event.getTo()) < 0.01) return;
-            double boostStrength = 0.6;
-            Vector newVelocity = direction.multiply(boostStrength);
-            player.setVelocity(newVelocity);
-        }
+        if (!player.isInLava() || !plugin.getDataManager().hasEffect(player, this)) return;
+
+        Vector inputDirection = getInputDirection(player);
+        if (inputDirection == null) return;
+
+        Vector velocity = player.getVelocity();
+        Vector horizontal = new Vector(velocity.getX(), 0, velocity.getZ());
+        Vector desired = inputDirection.multiply(0.6);
+        Vector blended = horizontal.multiply(0.35).add(desired.multiply(0.65));
+
+        player.setVelocity(new Vector(blended.getX(), velocity.getY(), blended.getZ()));
+    }
+
+    private Vector getInputDirection(Player player) {
+        var input = player.getCurrentInput();
+        Vector movement = new Vector(0, 0, 0);
+
+        Vector forward = player.getLocation().getDirection();
+        forward.setY(0);
+        if (forward.lengthSquared() < 0.0001) return null;
+        forward.normalize();
+
+        Vector right = new Vector(-forward.getZ(), 0, forward.getX());
+
+        if (input.isForward()) movement.add(forward);
+        if (input.isBackward()) movement.subtract(forward);
+        if (input.isLeft()) movement.subtract(right);
+        if (input.isRight()) movement.add(right);
+
+        if (movement.lengthSquared() < 0.0001) return null;
+        return movement.normalize();
     }
 
     @EventHandler

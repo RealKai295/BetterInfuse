@@ -209,6 +209,9 @@ thief:
   cooldown:
     default: 300
     augmented: 150
+  duration:
+    default: 15
+    augmented: 20
 
 
 ocean_pulling:
@@ -219,5 +222,5 @@ ocean_pulling:
 
 
 extra_effects:
-  Apophis: false
-  Thief: false
+  Apophis: true
+  Thief: true
