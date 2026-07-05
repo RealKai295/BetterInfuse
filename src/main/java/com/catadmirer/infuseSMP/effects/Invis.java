@@ -83,7 +83,7 @@ public class Invis extends InfuseEffect {
 
         for (Player vanished : vanishedPlayers) {
             for (Player other : Bukkit.getOnlinePlayers()) {
-                if (!other.equals(vanished) && !plugin.getDataManager().isTrusted(other, vanished)) {
+                if (!other.equals(vanished) && !plugin.getDataManager().isTrusted(owner, other)) {
                     other.hidePlayer(plugin, vanished);
                 }
             }
@@ -119,7 +119,7 @@ public class Invis extends InfuseEffect {
                     }
 
                     for (Player p : Bukkit.getOnlinePlayers()) {
-                        if (p.getWorld().equals(world) && p.getLocation().distance(center) <= radius && !plugin.getDataManager().isTrusted(p, owner)) {
+                        if (p.getWorld().equals(world) && p.getLocation().distance(center) <= radius && !plugin.getDataManager().isTrusted(owner, p)) {
                             p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 40, 0, false, false));
                         }
                     }

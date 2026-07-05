@@ -235,12 +235,10 @@ public class ApophisManager implements Listener {
     private void clearApophisDisguise(Player target) {
         cancelDisguiseRefresh(target);
 
-        // Getting the player's skin info from the disguise file
         SavedDisguise saved = savedDisguises.remove(target.getUniqueId());
         String originalName = saved != null && saved.originalName() != null ? saved.originalName() : target.getName();
 
         if (saved != null) {
-            // Getting the player's name
             tabIntegration.removeApophisName(
                     target,
                     saved.displayName() == null ? Component.text(originalName) : saved.displayName(),

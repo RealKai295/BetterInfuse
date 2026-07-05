@@ -99,7 +99,7 @@ public class Thunder extends InfuseEffect {
                 // Striking all players within the radius
                 for (Entity entity : world.getNearbyEntities(owner.getLocation(), radius, radius, radius)) {
                     if (!(entity instanceof Player target)) continue;
-                    if (plugin.getDataManager().isTrusted(target, owner)) continue;
+                    if (plugin.getDataManager().isTrusted(owner, target)) continue;
 
                     strikeLighting(target, owner);
                 }

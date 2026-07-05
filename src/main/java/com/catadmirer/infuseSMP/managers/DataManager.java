@@ -129,9 +129,24 @@ public class DataManager {
         save();
     }
 
+    private List<UUID> getManualTrustedIds(UUID trusterId) {
+        List<UUID> trustedIds = new ArrayList<>();
+        for (String entry : config.getStringList(trusterId + ".trust")) {
+            try {
+                trustedIds.add(UUID.fromString(entry));
+            } catch (IllegalArgumentException err) {
+                Infuse.LOGGER.warn("Ignoring invalid trust entry \"{}\" for player {}.", entry, trusterId);
+            }
+        }
+        return trustedIds;
+    }
+
+    private List<OfflinePlayer> getManualTrusted(OfflinePlayer truster) {
+        return getManualTrustedIds(truster.getUniqueId()).stream().map(Bukkit::getOfflinePlayer).toList();
+    }
+
     public List<OfflinePlayer> getTrusted(OfflinePlayer truster) {
-        List<OfflinePlayer> trusted = new ArrayList<>(config.getStringList(truster.getUniqueId() + ".trust").stream().map(UUID::fromString).map(Bukkit::getOfflinePlayer).toList());
-        return betterTeamsTrust.mergeTrustedWithTeammates(truster, trusted);
+        return betterTeamsTrust.mergeTrustedWithTeammates(truster, new ArrayList<>(getManualTrusted(truster)));
     }
 
     public void setTrusted(OfflinePlayer truster, List<OfflinePlayer> trusted) {
@@ -140,14 +155,18 @@ public class DataManager {
     }
 
     public void addTrust(OfflinePlayer caster, OfflinePlayer toTrust) {
-        List<OfflinePlayer> trustedPlayers = new ArrayList<>(config.getStringList(caster.getUniqueId() + ".trust").stream().map(UUID::fromString).map(Bukkit::getOfflinePlayer).toList());
+        if (isManuallyTrusted(caster, toTrust)) {
+            return;
+        }
+
+        List<OfflinePlayer> trustedPlayers = new ArrayList<>(getManualTrusted(caster));
         trustedPlayers.add(toTrust);
 
         setTrusted(caster, trustedPlayers);
     }
 
     public void removeTrust(OfflinePlayer caster, OfflinePlayer trusted) {
-        List<OfflinePlayer> trustedSet = new ArrayList<>(config.getStringList(caster.getUniqueId() + ".trust").stream().map(UUID::fromString).map(Bukkit::getOfflinePlayer).toList());
+        List<OfflinePlayer> trustedSet = new ArrayList<>(getManualTrusted(caster));
         trustedSet.removeIf(player -> player.getUniqueId().equals(trusted.getUniqueId()));
 
         setTrusted(caster, trustedSet);
@@ -158,12 +177,12 @@ public class DataManager {
         if (caster.getUniqueId().equals(trusted.getUniqueId())) return true;
         if (betterTeamsTrust.areTeammates(caster, trusted)) return true;
 
-        return config.getStringList(caster.getUniqueId() + ".trust").contains(trusted.getUniqueId().toString());
+        return getManualTrustedIds(caster.getUniqueId()).contains(trusted.getUniqueId());
     }
 
     public boolean isManuallyTrusted(OfflinePlayer caster, OfflinePlayer trusted) {
         if (caster == null || trusted == null) return false;
-        return config.getStringList(caster.getUniqueId() + ".trust").contains(trusted.getUniqueId().toString());
+        return getManualTrustedIds(caster.getUniqueId()).contains(trusted.getUniqueId());
     }
 
     public boolean areTeammates(OfflinePlayer first, OfflinePlayer second) {

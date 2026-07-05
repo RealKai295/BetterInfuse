@@ -91,7 +91,7 @@ public class Frost extends InfuseEffect {
         final Set<Player> affectedPlayers = new HashSet<>();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!player.equals(owner) && !plugin.getDataManager().isTrusted(player, owner)
+            if (!player.equals(owner) && !plugin.getDataManager().isTrusted(owner, player)
                     && player.getWorld().equals(world)
                     && player.getLocation().distance(center) <= radius) {
                 affectedPlayers.add(player);
