@@ -160,9 +160,9 @@ public class Heart extends InfuseEffect {
 
         ItemStack item = event.getItem();
         if (item.getType() == Material.ENCHANTED_GOLDEN_APPLE) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 2400, 4));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 2400, 4, false, false, false));
         } else {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 600, 0));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 600, 0, false, false, false));
         }
     }
 }

@@ -86,7 +86,7 @@ public class Apophis extends InfuseEffect {
         UUID playerUUID = owner.getUniqueId();
         if (!CooldownManager.isOnCooldown(playerUUID, "apophis")) {
             owner.playSound(owner.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1, 1);
-            owner.addPotionEffect(new PotionEffect(PotionEffectType.HERO_OF_THE_VILLAGE, 600, 254));
+            owner.addPotionEffect(new PotionEffect(PotionEffectType.HERO_OF_THE_VILLAGE, 600, 254, false, false, false));
             for (Entity entity : owner.getNearbyEntities(5, 5, 5)) {
                 if (entity instanceof LivingEntity && entity != owner) {
                     entity.setFireTicks(100);

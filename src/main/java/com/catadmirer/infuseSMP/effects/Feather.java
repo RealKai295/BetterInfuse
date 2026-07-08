@@ -65,7 +65,7 @@ public class Feather extends InfuseEffect {
         Vector dashDirection = owner.getEyeLocation().getDirection().normalize();
         Vector launchVector = dashDirection.multiply(0).setY(1);
         owner.setVelocity(launchVector);
-        owner.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 20, 10));
+        owner.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 20, 10, false, false, false));
 
         // Applying cooldowns and durations for the effect
         long cooldown = plugin.getMainConfig().cooldown(this);
@@ -146,7 +146,7 @@ public class Feather extends InfuseEffect {
 
         if (!plugin.getDataManager().hasEffect(player, this)) return;
 
-        target.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 100, 2));
+        target.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 100, 2, false, false, false));
         Location chargeLocation = player.getLocation().add(0, 1, 0);
         WindCharge windCharge = player.getWorld().spawn(chargeLocation, WindCharge.class);
         Location targetLocation = player.getLocation().subtract(0, 1, 0);

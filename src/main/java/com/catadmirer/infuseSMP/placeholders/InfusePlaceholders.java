@@ -94,6 +94,6 @@ public class InfusePlaceholders extends PlaceholderExpansion {
         InfuseEffect effect = plugin.getDataManager().getEffect(uuid, slot);
         if (effect == null) return "";
         
-        return effect.getName().toString();
+        return PlainTextComponentSerializer.plainText().serialize(effect.getName().toComponent());
     }
 }

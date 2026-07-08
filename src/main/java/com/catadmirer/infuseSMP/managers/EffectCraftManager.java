@@ -171,9 +171,12 @@ public class EffectCraftManager implements Listener {
         // Starting the ritual for the augmented effect
         // Creating the bossbar
         Component itemName = effect.getName().toComponent();
-        ritualBossBar = BossBar.bossBar(MiniMessage.miniMessage()
-                .deserialize("🧪 <b>" + effect.getName() + "</b><reset> 🧪").color(itemName.color()), 1,
-                effect.getRitualColor(), BossBar.Overlay.PROGRESS);
+        String serializedItemName = MiniMessage.miniMessage().serialize(itemName);
+        ritualBossBar = BossBar.bossBar(
+                MiniMessage.miniMessage().deserialize("🧪 <b>" + serializedItemName + "</b><reset> 🧪"),
+                1,
+                effect.getRitualColor(),
+                BossBar.Overlay.PROGRESS);
 
         // Adding every player online to the bossbar
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -238,7 +241,7 @@ public class EffectCraftManager implements Listener {
         if (plugin.getMainConfig().enableDiscordBroadcasts()) {
             String webhookUrl = plugin.getMainConfig().discordWebhookUrl();
             if (webhookUrl != null && !webhookUrl.isEmpty()) {
-                sendToDiscord(webhookUrl, dscMessage.toString());
+                sendToDiscord(webhookUrl, PlainTextComponentSerializer.plainText().serialize(dscMessage.toComponent()));
             }
         }
 

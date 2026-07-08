@@ -77,7 +77,7 @@ public class Frost extends InfuseEffect {
         if (CooldownManager.isOnCooldown(playerUUID, "frost")) return;
 
         owner.getWorld().playSound(owner.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1, 1);
-        owner.addPotionEffect(new PotionEffect(PotionEffectType.UNLUCK, 300, 0));
+        owner.addPotionEffect(new PotionEffect(PotionEffectType.UNLUCK, 300, 0, false, false, false));
 
         // Applying cooldowns and durations for the effect
         long cooldown = plugin.getMainConfig().cooldown(this);

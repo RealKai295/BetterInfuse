@@ -75,7 +75,7 @@ public class Haste extends InfuseEffect {
 
         CooldownManager.setTimes(playerUUID, "haste", duration, cooldown);
 
-        owner.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 20 * 15, 3));
+        owner.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 20 * 15, 3, false, false, false));
     }
 
     @Override
