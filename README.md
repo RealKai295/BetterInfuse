@@ -1,7 +1,4 @@
-![Infuse](https://cdn.modrinth.com/data/cached_images/e53b36316a34f52b86c051c7efd0d023caab717d.png)
-
-[![Discord](https://cdn.modrinth.com/data/cached_images/16684009ebeec99f6558120d6fae93d4a01eaf7e.png)](https://discord.gg/shaw)
-[![Paypal](https://cdn.modrinth.com/data/cached_images/872f381eebc95daeb270f6f6a940ff9f4b38b8f3.png)](https://www.paypal.com/paypalme/catadmirer)
+# Forked From this [Repository](https://github.com/CatAdmirer/Infuse)
 
 This is a Custom Plugin with different types of effects that provide OP Abilities
 
