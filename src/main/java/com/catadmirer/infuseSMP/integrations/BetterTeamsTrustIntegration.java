@@ -32,12 +32,17 @@ public class BetterTeamsTrustIntegration {
             return false;
         }
 
-        if (first.getUniqueId().equals(second.getUniqueId())) {
-            return true;
-        }
+        try {
+            if (first.getUniqueId().equals(second.getUniqueId())) {
+                return true;
+            }
 
-        Team team = Team.getTeam(first);
-        return team != null && team.getMembers().contains(second);
+            Team team = Team.getTeam(first);
+            return team != null && team.getMembers().contains(second);
+        } catch (Exception err) {
+            Infuse.LOGGER.warn("BetterTeams trust lookup failed, treating players as untrusted.", err);
+            return false;
+        }
     }
 
     public List<OfflinePlayer> getTeammates(OfflinePlayer player) {

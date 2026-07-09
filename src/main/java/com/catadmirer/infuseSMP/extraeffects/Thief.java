@@ -7,6 +7,7 @@ import com.catadmirer.infuseSMP.Message;
 import com.catadmirer.infuseSMP.Message.MessageType;
 import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
+import com.catadmirer.infuseSMP.util.DamageEventUtil;
 import com.catadmirer.infuseSMP.events.EffectUnequipEvent;
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
@@ -429,13 +430,19 @@ public class Thief extends InfuseEffect {
         InfuseEffect leftEffect = plugin.getDataManager().getEffect(victim.getUniqueId(), "1");
         InfuseEffect rightEffect = plugin.getDataManager().getEffect(victim.getUniqueId(), "2");
 
+        InfuseEffect stolenEffect;
         if (leftEffect != null && rightEffect != null) {
-            activateEffect(player, Math.random() > 0.5 ? leftEffect : rightEffect, victim);
+            stolenEffect = Math.random() > 0.5 ? leftEffect : rightEffect;
         } else if (leftEffect != null) {
-            activateEffect(player, leftEffect, victim);
+            stolenEffect = leftEffect;
         } else if (rightEffect != null) {
-            activateEffect(player, rightEffect, victim);
-        } else return;
+            stolenEffect = rightEffect;
+        } else {
+            return;
+        }
+
+        InfuseEffect effectToActivate = stolenEffect;
+        Bukkit.getScheduler().runTask(plugin, () -> activateEffect(player, effectToActivate, victim));
 
         CooldownManager.setDuration(playerUUID, "thief", 0);
     }

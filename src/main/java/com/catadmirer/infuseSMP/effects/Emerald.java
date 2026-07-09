@@ -7,6 +7,7 @@ import com.catadmirer.infuseSMP.Message;
 import com.catadmirer.infuseSMP.Message.MessageType;
 import com.catadmirer.infuseSMP.events.TenHitEvent;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
+import com.catadmirer.infuseSMP.util.DamageEventUtil;
 import com.catadmirer.infuseSMP.util.ItemUtil;
 import com.destroystokyo.paper.event.player.PlayerPickupExperienceEvent;
 import io.papermc.paper.datacomponent.DataComponentTypes;
@@ -306,7 +307,9 @@ public class Emerald extends InfuseEffect {
     @EventHandler
     public void stealExp(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player damaged)) return;
-        if (!(event.getDamageSource().getCausingEntity() instanceof Player attacker)) return;
+
+        Player attacker = DamageEventUtil.getPlayerAttacker(event);
+        if (attacker == null) return;
         if (!plugin.getDataManager().hasEffect(attacker, this)) return;
 
         // Getting configs
@@ -314,13 +317,13 @@ public class Emerald extends InfuseEffect {
         int expPerHit = plugin.getMainConfig().emeraldExpPerHit();
 
         // Updating the xp of the players
-        damaged.setTotalExperience(exp - expPerHit);
+        damaged.setTotalExperience(Math.max(0, exp - expPerHit));
 
         int toGain = (int) (expPerHit * plugin.getMainConfig().emeraldExpPercent());
         attacker.setTotalExperience(attacker.getTotalExperience() + toGain);
 
         // Calling the exp change event to allow for sharing if the spark is active
-        new PlayerExpChangeEvent(attacker, toGain).callEvent();
+        Bukkit.getScheduler().runTask(plugin, () -> new PlayerExpChangeEvent(attacker, toGain).callEvent());
     }
 
     @EventHandler

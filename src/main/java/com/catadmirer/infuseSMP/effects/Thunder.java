@@ -2,6 +2,7 @@ package com.catadmirer.infuseSMP.effects;
 
 import com.catadmirer.infuseSMP.*;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
+import com.catadmirer.infuseSMP.util.DamageEventUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Particle;
@@ -137,8 +138,20 @@ public class Thunder extends InfuseEffect {
      */
     public static void strikeLighting(LivingEntity target, LivingEntity attacker) {
         target.getWorld().strikeLightningEffect(target.getLocation());
-        target.damage(2, DamageSource.builder(DamageType.LIGHTNING_BOLT).withDirectEntity(attacker).build());
         target.getWorld().spawnParticle(Particle.DUST, target.getLocation().add(0, 1, 0), 10, 0.5, 0.5, 0.5, 0, new DustOptions(Color.YELLOW, 1.5F));
+
+        Infuse plugin = Infuse.getInstance();
+        if (plugin == null || !plugin.isEnabled()) {
+            return;
+        }
+
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!target.isValid() || target.isDead()) {
+                return;
+            }
+
+            target.damage(2, DamageSource.builder(DamageType.LIGHTNING_BOLT).withDirectEntity(attacker).build());
+        });
     }
 
     /**
@@ -193,7 +206,7 @@ public class Thunder extends InfuseEffect {
         if (!plugin.getDataManager().hasEffect(attacker, this)) return;
 
         // Making sure it wasn't a lightning bolt
-        if (event.getDamageSource().getDamageType().equals(DamageType.LIGHTNING_BOLT)) return;
+        if (DamageEventUtil.isDamageType(event, DamageType.LIGHTNING_BOLT)) return;
 
         // Making sure it counts as a normal hit
         // Vanilla attack cooldown needs to be at 84.8% to be a normal hit.
@@ -239,7 +252,8 @@ public class Thunder extends InfuseEffect {
             if (!attacker.isConnected()) return;
 
             Infuse.LOGGER.debug("[Thunder] Decrementing hit counter");
-            int curHits = hitTracker.get(attacker.getUniqueId());
+            int curHits = hitTracker.getOrDefault(attacker.getUniqueId(), 0);
+            if (curHits <= 0) return;
 
             Infuse.LOGGER.debug("[Thunder] {}'s hit counter is {}.", attacker.getName(), curHits - 1);
             hitTracker.put(attacker.getUniqueId(), curHits - 1);

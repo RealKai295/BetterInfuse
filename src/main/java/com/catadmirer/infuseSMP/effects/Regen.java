@@ -6,6 +6,7 @@ import com.catadmirer.infuseSMP.Infuse;
 import com.catadmirer.infuseSMP.Message;
 import com.catadmirer.infuseSMP.events.TenHitEvent;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
+import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -91,10 +92,11 @@ public class Regen extends InfuseEffect {
 
         player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 60, 1, false, false));
         if (CooldownManager.isEffectActive(player.getUniqueId(), "regen")) {
+            double healAmount = event.getDamage() / 2;
             for (Entity loopentity : player.getNearbyEntities(5, 5, 5)) {
                 if (loopentity instanceof Player otherplayer) {
                     if (plugin.getDataManager().isTrusted(player, otherplayer)) {
-                        otherplayer.heal(event.getDamage()/2);
+                        Bukkit.getScheduler().runTask(plugin, () -> otherplayer.heal(healAmount));
                     }
                 }
             }

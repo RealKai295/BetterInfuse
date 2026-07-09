@@ -5,6 +5,7 @@ import com.catadmirer.infuseSMP.EffectIds;
 import com.catadmirer.infuseSMP.Infuse;
 import com.catadmirer.infuseSMP.Message;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
+import com.catadmirer.infuseSMP.util.DamageEventUtil;
 import com.catadmirer.infuseSMP.util.ItemUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -84,7 +85,8 @@ public class Strength extends InfuseEffect {
 
     @EventHandler
     public void extraDamage(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player attacker)) return;
+        Player attacker = DamageEventUtil.getPlayerAttacker(event);
+        if (attacker == null) return;
 
         // Skipping players without the strength effect
         if (!plugin.getDataManager().hasEffect(attacker, this)) return;
@@ -104,7 +106,8 @@ public class Strength extends InfuseEffect {
     /** Automatically crits while the strength spark is active */
     @EventHandler
     public void strengthSparkAutoCrit(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player player)) return;
+        Player player = DamageEventUtil.getPlayerAttacker(event);
+        if (player == null) return;
 
         // Fabricating crits if the spark is active, and if it wasn't already a critical hit.
         if (CooldownManager.isEffectActive(player.getUniqueId(), "strength") && !event.isCritical()) {
@@ -137,7 +140,8 @@ public class Strength extends InfuseEffect {
     /** Doubles damage against mobs for players with the strength effect. */
     @EventHandler
     public void strengthDoubleDamage(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player attacker)) return;
+        Player attacker = DamageEventUtil.getPlayerAttacker(event);
+        if (attacker == null) return;
         if (!(event.getEntity() instanceof LivingEntity entity)) return;
 
         // Not dealing double damage to other players
@@ -154,7 +158,9 @@ public class Strength extends InfuseEffect {
     @EventHandler
     public void strengthLengthenShieldCooldown(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
-        if (!(event.getDamager() instanceof Player attacker)) return;
+
+        Player attacker = DamageEventUtil.getPlayerAttacker(event);
+        if (attacker == null) return;
 
         // Making sure the player was blocking
         if (!player.isBlocking()) return;

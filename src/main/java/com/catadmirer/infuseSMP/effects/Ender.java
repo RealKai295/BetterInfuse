@@ -5,6 +5,7 @@ import com.catadmirer.infuseSMP.EffectIds;
 import com.catadmirer.infuseSMP.Infuse;
 import com.catadmirer.infuseSMP.Message;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
+import com.catadmirer.infuseSMP.util.DamageEventUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -36,6 +37,7 @@ import java.util.UUID;
 public class Ender extends InfuseEffect {
     public static final Component fireballName = Component.text("Cursing Projectile");
     public static final Set<UUID> cursedPlayers = new HashSet<>();
+    private static final Set<UUID> sharingCurseDamage = new HashSet<>();
     private final Infuse plugin;
 
     public Ender() {
@@ -171,29 +173,41 @@ public class Ender extends InfuseEffect {
 
         // Making sure the damage source isn't the one made by this plugin (prevents looping curse damage)
         if (event.getDamageSource().getDamageType() == DamageType.CAMPFIRE && event.getDamageSource().getDirectEntity() != null) return;
-        
+        if (sharingCurseDamage.contains(damagedUUID)) return;
+
+        double sharedDamage = event.getDamage();
         // Making the fake damageSource
         DamageSource fakeSource = DamageSource.builder(DamageType.CAMPFIRE).withDirectEntity(damagedPlayer).build();
 
-        // Sharing curse damage with all other cursed players
-        for (UUID cursedUUID : cursedPlayers) {
-            // Skipping the player who was hit
-            if (cursedUUID == damagedUUID) continue;
+        sharingCurseDamage.add(damagedUUID);
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            try {
+                // Sharing curse damage with all other cursed players
+                for (UUID cursedUUID : cursedPlayers) {
+                    // Skipping the player who was hit
+                    if (cursedUUID == damagedUUID) continue;
 
-            Player player = Bukkit.getPlayer(cursedUUID);
-            player.damage(event.getDamage(), fakeSource);
-        }
+                    Player player = Bukkit.getPlayer(cursedUUID);
+                    if (player == null || !player.isOnline()) continue;
+
+                    player.damage(sharedDamage, fakeSource);
+                }
+            } finally {
+                sharingCurseDamage.remove(damagedUUID);
+            }
+        });
     }
 
     @EventHandler
     public void enderOnehitMobs(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player attacker)) return;
+        Player attacker = DamageEventUtil.getPlayerAttacker(event);
+        if (attacker == null) return;
         if (!(event.getEntity() instanceof LivingEntity mob)) return;
         if (event.getEntity() instanceof Player) return;
 
         UUID attackerUUID = attacker.getUniqueId();
         if (CooldownManager.isEffectActive(attackerUUID, "ender")) {
-            mob.setHealth(0);
+            event.setDamage(Math.max(event.getDamage(), mob.getHealth()));
         }
     }
 
@@ -222,8 +236,9 @@ public class Ender extends InfuseEffect {
     @EventHandler
     public void enderCurseHit(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player target)) return;
-        if (!(event.getDamager() instanceof Player attacker)) return;
 
+        Player attacker = DamageEventUtil.getPlayerAttacker(event);
+        if (attacker == null) return;
         if (!plugin.getDataManager().hasEffect(attacker, this)) return;
 
         cursePlayer(target.getUniqueId(), 1200);

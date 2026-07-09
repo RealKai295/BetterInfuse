@@ -1,6 +1,7 @@
 package com.catadmirer.infuseSMP;
 
 import com.catadmirer.infuseSMP.events.TenHitEvent;
+import com.catadmirer.infuseSMP.util.DamageEventUtil;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -30,7 +31,8 @@ public class HitTracker implements Listener {
     @EventHandler
     public void onPlayerHit(EntityDamageByEntityEvent event) {
         // Making sure both entities are players
-        if (!(event.getDamager() instanceof Player attacker)) return;
+        Player attacker = DamageEventUtil.getPlayerAttacker(event);
+        if (attacker == null) return;
         if (!(event.getEntity() instanceof Player target)) return;
 
         Infuse.LOGGER.debug("{} has hit {}", attacker.getName(), target.getName());
@@ -76,7 +78,8 @@ public class HitTracker implements Listener {
             if (!attacker.isConnected()) return;
 
             Infuse.LOGGER.debug("Decrementing hit counter");
-            int curHits = hitTracker.get(attacker.getUniqueId());
+            int curHits = hitTracker.getOrDefault(attacker.getUniqueId(), 0);
+            if (curHits <= 0) return;
 
             Infuse.LOGGER.debug("{}'s hit counter is {}.", attacker.getName(), curHits - 1);
             hitTracker.put(attacker.getUniqueId(), curHits - 1);
@@ -97,6 +100,7 @@ public class HitTracker implements Listener {
      * 
      * @param event A {@link PlayerQuitEvent}
      */
+    @EventHandler
     public void onPlayerLeave(PlayerQuitEvent event) {
         hitTracker.remove(event.getPlayer().getUniqueId());
     }
